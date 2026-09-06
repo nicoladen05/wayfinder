@@ -75,14 +75,22 @@ func resolveNameserverRecursively(domain []string, qType uint16) error {
 	lenBytes := 12
 
 	if respHeader.QDCOUNT > 0 {
-		question, len, _ := parseQuestion(buf[lenBytes:n])
+		question, len, err := parseQuestion(buf[:n], lenBytes)
+		if err != nil {
+			return err
+		}
+
 		fmt.Println("Question received: ", question.string())
 
 		lenBytes += len
 	}
 
 	if respHeader.NSCOUNT > 0 {
-		answer, len, _ := parseResource(buf[lenBytes:n])
+		answer, len, err := parseResource(buf[:n], lenBytes)
+		if err != nil {
+			return err
+		}
+
 		fmt.Println("Nameserver received: ", answer.string())
 
 		lenBytes += len

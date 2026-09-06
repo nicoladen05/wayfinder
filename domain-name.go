@@ -54,8 +54,13 @@ func readNames(name []byte, offset int, seen map[int]bool) (names []string, tota
 
 		totalLength++ // Move to the next byte after the length byte
 
-		if (pos + nextNameLength) > len(name) {
-			return nil, 0, fmt.Errorf("label length %d exceeds remaining bytes %d, truncated question", nextNameLength, len(name)-pos)
+		start := pos + 1
+		end := start + nextNameLength
+		if end > len(name) {
+			return nil, 0, fmt.Errorf(
+				"label length %d exceeds remaining bytes %d",
+				nextNameLength, len(name)-start,
+			)
 		}
 
 		labelBytes := name[totalLength+offset : totalLength+offset+nextNameLength]
@@ -68,8 +73,8 @@ func readNames(name []byte, offset int, seen map[int]bool) (names []string, tota
 	return names, totalLength, nil
 }
 
-func parseDomainName(name []byte) (names []string, totalLength int, err error) {
-	return readNames(name, 0, make(map[int]bool))
+func parseDomainName(name []byte, offset int) (names []string, totalLength int, err error) {
+	return readNames(name, offset, make(map[int]bool))
 }
 
 func buildDomainName(labels []string) (bytes []byte) {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 )
 
@@ -22,17 +23,20 @@ func main() {
 
 		n, respAddr, err := conn.ReadFromUDP(buf)
 		if err != nil {
-			fmt.Println("Error reading from UDP connection:", err)
+			log.Fatal("Error reading from UDP connection:", err)
 		}
 
 		header, _ := parseHeader(buf[:12])
 		fmt.Println(header.string())
 
-		question, _, _ := parseQuestion(buf[12:n])
+		question, _, _ := parseQuestion(buf[12:n], 0)
 		fmt.Println(question.string())
 
 		// Resolve
-		_ = resolveNameserverRecursively(question.QNAME, question.QTYPE)
+		err = resolveNameserverRecursively(question.QNAME, question.QTYPE)
+		if err != nil {
+			fmt.Println("Error resolving nameserver:", err)
+		}
 
 		// Send a mock response
 		responseHeader := DNSHeader{

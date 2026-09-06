@@ -32,8 +32,8 @@ RDATA: %v`,
 	)
 }
 
-func parseResource(rawResource []byte) (DNSResource, int, error) {
-	name, nameLength, err := parseDomainName(rawResource)
+func parseResource(rawResource []byte, offset int) (DNSResource, int, error) {
+	name, nameLength, err := parseDomainName(rawResource, offset)
 	if err != nil {
 		return DNSResource{}, 0, err
 	}

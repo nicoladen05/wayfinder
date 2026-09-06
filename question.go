@@ -32,8 +32,8 @@ QCLASS: %d`,
 		q.QCLASS)
 }
 
-func parseQuestion(question []byte) (DNSQuestion, int, error) {
-	qname, qnameLength, err := parseDomainName(question)
+func parseQuestion(question []byte, offset int) (DNSQuestion, int, error) {
+	qname, qnameLength, err := parseDomainName(question, offset)
 	if err != nil {
 		return DNSQuestion{}, 0, err
 	}
