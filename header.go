@@ -76,3 +76,16 @@ func parseHeader(header []byte) DNSHeader {
 		ARCOUNT: binary.BigEndian.Uint16(header[10:12]),
 	}
 }
+
+func buildHeader(header DNSHeader) []byte {
+	initialHeader := make([]byte, 12)
+
+	binary.BigEndian.PutUint16(initialHeader[0:2], header.ID)
+	initialHeader[2] = (header.QR << 7) | (header.OPCODE << 3) | (header.AA << 2) | (header.TC << 1) | header.RD
+	binary.BigEndian.PutUint16(initialHeader[4:6], header.QDCOUNT)
+	binary.BigEndian.PutUint16(initialHeader[6:8], header.ANCOUNT)
+	binary.BigEndian.PutUint16(initialHeader[8:10], header.NSCOUNT)
+	binary.BigEndian.PutUint16(initialHeader[10:12], header.ARCOUNT)
+
+	return initialHeader
+}

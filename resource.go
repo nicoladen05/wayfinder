@@ -32,7 +32,7 @@ RDATA: %v`,
 }
 
 func parseResource(resource []byte) DNSResource {
-	name, nameLength := parseQName(resource)
+	name, nameLength := parseDomainName(resource)
 
 	return DNSResource{
 		NAME:     name,
@@ -42,4 +42,21 @@ func parseResource(resource []byte) DNSResource {
 		RDLENGTH: binary.BigEndian.Uint16(resource[nameLength+8 : nameLength+10]),
 		RDATA:    resource[nameLength+10:],
 	}
+}
+
+func buildResource(resource DNSResource) (bytes []byte) {
+	nameBytes := buildDomainName(resource.NAME)
+	nameLength := len(nameBytes)
+
+	bytes = append(bytes, nameBytes...)
+	bytes = append(bytes, make([]byte, 10)...) // Reserve space for TYPE, CLASS, TTL, RDLENGTH
+
+	binary.BigEndian.PutUint16(bytes[nameLength:nameLength+2], resource.TYPE)
+	binary.BigEndian.PutUint16(bytes[nameLength+2:nameLength+4], resource.CLASS)
+	binary.BigEndian.PutUint32(bytes[nameLength+4:nameLength+8], resource.TTL)
+	binary.BigEndian.PutUint16(bytes[nameLength+8:nameLength+10], resource.RDLENGTH)
+
+	bytes = append(bytes, resource.RDATA...)
+
+	return bytes
 }
