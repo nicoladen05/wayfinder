@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 )
 
@@ -31,12 +32,16 @@ QCLASS: %d`,
 		q.QCLASS)
 }
 
-func parseQuestion(question []byte) (DNSQuestion, int) {
+func parseQuestion(question []byte) (DNSQuestion, int, error) {
 	qname, qnameLength := parseDomainName(question)
+
+	if qnameLength+4 != len(question) {
+		return DNSQuestion{}, 0, errors.New("invalid question length")
+	}
 
 	return DNSQuestion{
 		QNAME:  qname,
 		QTYPE:  binary.BigEndian.Uint16(question[qnameLength : qnameLength+2]),
 		QCLASS: binary.BigEndian.Uint16(question[qnameLength+2 : qnameLength+4]),
-	}, qnameLength + 4
+	}, qnameLength + 4, nil
 }

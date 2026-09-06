@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 )
 
@@ -12,6 +13,10 @@ type DNSResource struct {
 	TTL      uint32   // The time to live of the resource record (32 bit)
 	RDLENGTH uint16   // The length of the RDATA field (16 bit)
 	RDATA    []byte   // The data of the resource record (variable length)
+}
+
+func (r DNSResource) isValid() bool {
+	return !(r.TYPE > 65535 || r.CLASS > 65535 || r.TTL > 4294967295 || r.RDLENGTH > 65535)
 }
 
 func (r DNSResource) string() string {
@@ -31,8 +36,12 @@ RDATA: %v`,
 	)
 }
 
-func parseResource(resource []byte) DNSResource {
+func parseResource(resource []byte) (DNSResource, error) {
 	name, nameLength := parseDomainName(resource)
+
+	if nameLength+10 < len(resource) {
+		return DNSResource{}, errors.New("invalid resource length")
+	}
 
 	return DNSResource{
 		NAME:     name,
@@ -41,10 +50,14 @@ func parseResource(resource []byte) DNSResource {
 		TTL:      binary.BigEndian.Uint32(resource[nameLength+4 : nameLength+8]),
 		RDLENGTH: binary.BigEndian.Uint16(resource[nameLength+8 : nameLength+10]),
 		RDATA:    resource[nameLength+10:],
-	}
+	}, nil
 }
 
-func buildResource(resource DNSResource) (bytes []byte) {
+func buildResource(resource DNSResource) (bytes []byte, error error) {
+	if !resource.isValid() {
+		return nil, errors.New("invalid resource record")
+	}
+
 	nameBytes := buildDomainName(resource.NAME)
 	nameLength := len(nameBytes)
 
@@ -58,5 +71,5 @@ func buildResource(resource DNSResource) (bytes []byte) {
 
 	bytes = append(bytes, resource.RDATA...)
 
-	return bytes
+	return bytes, nil
 }

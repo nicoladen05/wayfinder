@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 )
 
@@ -21,6 +22,19 @@ type DNSHeader struct {
 	ANCOUNT uint16 // Number of answers (16 bit)
 	NSCOUNT uint16 // Number of authority records (16 bit)
 	ARCOUNT uint16 // Number of additional records (16 bit)
+}
+
+func (h DNSHeader) isValid() bool {
+	return !(h.QR > 1 ||
+		h.OPCODE > 15 ||
+		h.AA > 1 ||
+		h.TC > 1 ||
+		h.RD > 1 ||
+		h.RA > 1 ||
+		h.Z > 1 ||
+		h.AD > 1 ||
+		h.CD > 1 ||
+		h.RCODE > 15)
 }
 
 func (h DNSHeader) string() string {
@@ -57,7 +71,11 @@ ARCOUNT: %d`,
 		h.ARCOUNT)
 }
 
-func parseHeader(header []byte) DNSHeader {
+func parseHeader(header []byte) (DNSHeader, error) {
+	if len(header) != 12 {
+		return DNSHeader{}, errors.New("header must be exactly 12 bytes long")
+	}
+
 	return DNSHeader{
 		ID:      binary.BigEndian.Uint16(header[0:2]),
 		QR:      header[2] >> 7,
@@ -74,10 +92,14 @@ func parseHeader(header []byte) DNSHeader {
 		ANCOUNT: binary.BigEndian.Uint16(header[6:8]),
 		NSCOUNT: binary.BigEndian.Uint16(header[8:10]),
 		ARCOUNT: binary.BigEndian.Uint16(header[10:12]),
-	}
+	}, nil
 }
 
-func buildHeader(header DNSHeader) []byte {
+func buildHeader(header DNSHeader) ([]byte, error) {
+	if !header.isValid() {
+		return nil, errors.New("invalid header values")
+	}
+
 	initialHeader := make([]byte, 12)
 
 	binary.BigEndian.PutUint16(initialHeader[0:2], header.ID)
@@ -87,5 +109,5 @@ func buildHeader(header DNSHeader) []byte {
 	binary.BigEndian.PutUint16(initialHeader[8:10], header.NSCOUNT)
 	binary.BigEndian.PutUint16(initialHeader[10:12], header.ARCOUNT)
 
-	return initialHeader
+	return initialHeader, nil
 }
