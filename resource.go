@@ -33,7 +33,10 @@ RDATA: %v`,
 }
 
 func parseResource(rawResource []byte) (DNSResource, int, error) {
-	name, nameLength := parseDomainName(rawResource)
+	name, nameLength, err := parseDomainName(rawResource)
+	if err != nil {
+		return DNSResource{}, 0, err
+	}
 
 	headLength := nameLength + 10 // 2 bytes for TYPE, 2 bytes for CLASS, 4 bytes for TTL, 2 bytes for RDLENGTH
 

@@ -33,7 +33,10 @@ QCLASS: %d`,
 }
 
 func parseQuestion(question []byte) (DNSQuestion, int, error) {
-	qname, qnameLength := parseDomainName(question)
+	qname, qnameLength, err := parseDomainName(question)
+	if err != nil {
+		return DNSQuestion{}, 0, err
+	}
 
 	if qnameLength+4 > len(question) {
 		return DNSQuestion{}, 0, errors.New("invalid question length")
