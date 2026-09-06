@@ -38,14 +38,15 @@ func parseQuestion(question []byte, offset int) (DNSQuestion, int, error) {
 		return DNSQuestion{}, 0, err
 	}
 
-	if qnameLength+4 > len(question) {
+	fieldOffset := offset + qnameLength
+	if fieldOffset+4 > len(question) {
 		return DNSQuestion{}, 0, errors.New("invalid question length")
 	}
 
 	return DNSQuestion{
 		QNAME:  qname,
-		QTYPE:  binary.BigEndian.Uint16(question[qnameLength : qnameLength+2]),
-		QCLASS: binary.BigEndian.Uint16(question[qnameLength+2 : qnameLength+4]),
+		QTYPE:  binary.BigEndian.Uint16(question[fieldOffset : fieldOffset+2]),
+		QCLASS: binary.BigEndian.Uint16(question[fieldOffset+2 : fieldOffset+4]),
 	}, qnameLength + 4, nil
 }
 

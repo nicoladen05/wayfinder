@@ -38,25 +38,27 @@ func parseResource(rawResource []byte, offset int) (DNSResource, int, error) {
 		return DNSResource{}, 0, err
 	}
 
-	headLength := nameLength + 10 // 2 bytes for TYPE, 2 bytes for CLASS, 4 bytes for TTL, 2 bytes for RDLENGTH
+	fieldOffset := offset + nameLength
+	headEnd := fieldOffset + 10 // 2 bytes for TYPE, 2 bytes for CLASS, 4 bytes for TTL, 2 bytes for RDLENGTH
 
-	if headLength > len(rawResource) {
+	if headEnd > len(rawResource) {
 		return DNSResource{}, 0, errors.New("invalid resource length")
 	}
 
-	dataLength := binary.BigEndian.Uint16(rawResource[nameLength+8 : nameLength+10]) // RDLENGTH
+	dataLength := binary.BigEndian.Uint16(rawResource[fieldOffset+8 : fieldOffset+10])
+	dataEnd := headEnd + int(dataLength)
 
-	if headLength+int(dataLength) > len(rawResource) {
+	if dataEnd > len(rawResource) {
 		return DNSResource{}, 0, errors.New("invalid resource length")
 	}
 
 	resource := DNSResource{
 		NAME:     name,
-		TYPE:     binary.BigEndian.Uint16(rawResource[nameLength : nameLength+2]),
-		CLASS:    binary.BigEndian.Uint16(rawResource[nameLength+2 : nameLength+4]),
-		TTL:      binary.BigEndian.Uint32(rawResource[nameLength+4 : nameLength+8]),
+		TYPE:     binary.BigEndian.Uint16(rawResource[fieldOffset : fieldOffset+2]),
+		CLASS:    binary.BigEndian.Uint16(rawResource[fieldOffset+2 : fieldOffset+4]),
+		TTL:      binary.BigEndian.Uint32(rawResource[fieldOffset+4 : fieldOffset+8]),
 		RDLENGTH: dataLength,
-		RDATA:    rawResource[headLength : headLength+int(dataLength)],
+		RDATA:    rawResource[headEnd:dataEnd],
 	}
 
 	return resource, nameLength + 10 + int(resource.RDLENGTH), nil
