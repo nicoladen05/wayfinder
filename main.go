@@ -21,16 +21,18 @@ func main() {
 		buf := make([]byte, 1024)
 
 		n, respAddr, err := conn.ReadFromUDP(buf)
-
 		if err != nil {
 			fmt.Println("Error reading from UDP connection:", err)
 		}
 
-		header := parseHeader(buf[:12])
+		header, _ := parseHeader(buf[:12])
 		fmt.Println(header.string())
 
-		question, _ := parseQuestion(buf[12:n])
+		question, _, _ := parseQuestion(buf[12:n])
 		fmt.Println(question.string())
+
+		// Resolve
+		_ = resolveNameserverRecursively(question.QNAME, question.QTYPE)
 
 		// Send a mock response
 		responseHeader := DNSHeader{
@@ -60,8 +62,8 @@ func main() {
 			RDATA:    []byte{8, 8, 8, 8}, // Example IPv4 address for www.google.com
 		}
 
-		rawResponseHeader := buildHeader(responseHeader)
-		rawResponseBody := buildResource(responseBody)
+		rawResponseHeader, _ := buildHeader(responseHeader)
+		rawResponseBody, _ := buildResource(responseBody)
 
 		response := rawResponseHeader
 		response = append(response, rawResponseBody...)

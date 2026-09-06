@@ -35,7 +35,7 @@ QCLASS: %d`,
 func parseQuestion(question []byte) (DNSQuestion, int, error) {
 	qname, qnameLength := parseDomainName(question)
 
-	if qnameLength+4 != len(question) {
+	if qnameLength+4 > len(question) {
 		return DNSQuestion{}, 0, errors.New("invalid question length")
 	}
 
@@ -44,4 +44,18 @@ func parseQuestion(question []byte) (DNSQuestion, int, error) {
 		QTYPE:  binary.BigEndian.Uint16(question[qnameLength : qnameLength+2]),
 		QCLASS: binary.BigEndian.Uint16(question[qnameLength+2 : qnameLength+4]),
 	}, qnameLength + 4, nil
+}
+
+func buildQuestion(question DNSQuestion) (bytes []byte, error error) {
+	name := buildDomainName(question.QNAME)
+	nameLength := len(name)
+
+	bytes = append(bytes, name...)
+
+	bytes = append(bytes, make([]byte, 4)...) // Reserve 4 bytes for QTYPE and QCLASS
+
+	binary.BigEndian.PutUint16(bytes[nameLength:nameLength+2], question.QTYPE)
+	binary.BigEndian.PutUint16(bytes[nameLength+2:nameLength+4], question.QCLASS)
+
+	return bytes, nil
 }
