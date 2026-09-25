@@ -1,4 +1,4 @@
-package main
+package dnsmsg
 
 import (
 	"encoding/binary"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-type DNSHeader struct {
+type Header struct {
 	ID      uint16 // Identification of the DNS query (16 bit)
 	QR      uint8  // Query/Response Flag (1 bit) (0 = query, 1 = response)
 	OPCODE  uint8  // Kind of the query (4 bit) (1 = Standard Query, 2 = Inverse Query, 3 = Server status request)
@@ -24,7 +24,8 @@ type DNSHeader struct {
 	ARCOUNT uint16 // Number of additional records (16 bit)
 }
 
-func (h DNSHeader) isValid() bool {
+// Check if the headers integer values are within the required ranges
+func (h Header) isValid() bool {
 	return !(h.QR > 1 ||
 		h.OPCODE > 15 ||
 		h.AA > 1 ||
@@ -37,7 +38,8 @@ func (h DNSHeader) isValid() bool {
 		h.RCODE > 15)
 }
 
-func (h DNSHeader) string() string {
+// Display the headers fields as a string
+func (h Header) String() string {
 	return fmt.Sprintf(
 		`ID: %d,
 QR: %d,
@@ -71,12 +73,14 @@ ARCOUNT: %d`,
 		h.ARCOUNT)
 }
 
-func parseHeader(header []byte) (DNSHeader, error) {
+// Create a Header based on a byte slice.
+// The byte slice must be exactly 12 bytes long, otherwise an error is returned.
+func parseHeader(header []byte) (Header, error) {
 	if len(header) != 12 {
-		return DNSHeader{}, errors.New("header must be exactly 12 bytes long")
+		return Header{}, errors.New("header must be exactly 12 bytes long")
 	}
 
-	return DNSHeader{
+	return Header{
 		ID:      binary.BigEndian.Uint16(header[0:2]),
 		QR:      header[2] >> 7,
 		OPCODE:  (header[2] >> 3) & 0x0F,
@@ -95,19 +99,21 @@ func parseHeader(header []byte) (DNSHeader, error) {
 	}, nil
 }
 
-func buildHeader(header DNSHeader) ([]byte, error) {
-	if !header.isValid() {
+// Return the byte representation of the Header.
+// If the header values are out of range, an error is returned.
+func (h Header) Bytes() ([]byte, error) {
+	if !h.isValid() {
 		return nil, errors.New("invalid header values")
 	}
 
-	initialHeader := make([]byte, 12)
+	headerBytes := make([]byte, 12)
 
-	binary.BigEndian.PutUint16(initialHeader[0:2], header.ID)
-	initialHeader[2] = (header.QR << 7) | (header.OPCODE << 3) | (header.AA << 2) | (header.TC << 1) | header.RD
-	binary.BigEndian.PutUint16(initialHeader[4:6], header.QDCOUNT)
-	binary.BigEndian.PutUint16(initialHeader[6:8], header.ANCOUNT)
-	binary.BigEndian.PutUint16(initialHeader[8:10], header.NSCOUNT)
-	binary.BigEndian.PutUint16(initialHeader[10:12], header.ARCOUNT)
+	binary.BigEndian.PutUint16(headerBytes[0:2], h.ID)
+	headerBytes[2] = (h.QR << 7) | (h.OPCODE << 3) | (h.AA << 2) | (h.TC << 1) | h.RD
+	binary.BigEndian.PutUint16(headerBytes[4:6], h.QDCOUNT)
+	binary.BigEndian.PutUint16(headerBytes[6:8], h.ANCOUNT)
+	binary.BigEndian.PutUint16(headerBytes[8:10], h.NSCOUNT)
+	binary.BigEndian.PutUint16(headerBytes[10:12], h.ARCOUNT)
 
-	return initialHeader, nil
+	return headerBytes, nil
 }

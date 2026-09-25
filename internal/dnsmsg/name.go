@@ -1,14 +1,25 @@
-package main
+package dnsmsg
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
+
+// A domain name consiting of 1:many labels.
+type Name []string
+
+// Return the string representation of the label (i.e. www.google.com)
+func (n Name) String() string {
+	return strings.Join(n, ".")
+}
 
 func isCompressed(label byte) bool {
 	// A name is compressed, if the first two bits are 1.
 	return label&0b11000000 == 0b11000000
 }
 
-func readNames(name []byte, offset int, seen map[int]bool) (names []string, totalLength int, err error) {
-	if offset >= len(name) {
+func readName(b []byte, offset int, seen map[int]bool) (name Name, totalLength int, err error) {
+	if offset >= len(b) {
 		return nil, 0, fmt.Errorf("offset %d is out of bounds for name length %d", offset, len(name))
 	}
 
@@ -19,11 +30,11 @@ func readNames(name []byte, offset int, seen map[int]bool) (names []string, tota
 
 	for {
 		pos := offset + totalLength
-		if pos >= len(name) {
+		if pos >= len(b) {
 			return nil, 0, fmt.Errorf("truncated name")
 		}
 
-		currentByte := name[pos]
+		currentByte := b[pos]
 
 		// The first byte indicates the nextNameLength of the upcoming label
 		nextNameLength := int(currentByte)
@@ -35,50 +46,52 @@ func readNames(name []byte, offset int, seen map[int]bool) (names []string, tota
 		}
 
 		if isCompressed(currentByte) {
-			if pos+1 >= len(name) {
-				return nil, 0, fmt.Errorf("pointer at offset %d is out of bounds for name length %d", pos+1, len(name))
+			if pos+1 >= len(b) {
+				return nil, 0, fmt.Errorf("pointer at offset %d is out of bounds for name length %d", pos+1, len(b))
 			}
-			nextByte := name[pos+1]
+			nextByte := b[pos+1]
 
 			offset := (int(currentByte&0b00111111))<<8 | int(nextByte) // Get the offset from the current and next byte
 
 			// Recursively read the names from the section the pointer references
-			suffix, _, err := readNames(name, int(offset), seen)
+			suffix, _, err := readName(b, int(offset), seen)
 			if err != nil {
 				return nil, 0, err
 			}
 
 			totalLength += 2 // Move past the two bytes of the pointer
-			return append(names, suffix...), totalLength, err
+			return append(name, suffix...), totalLength, err
 		}
 
 		totalLength++ // Move to the next byte after the length byte
 
 		start := pos + 1
 		end := start + nextNameLength
-		if end > len(name) {
+		if end > len(b) {
 			return nil, 0, fmt.Errorf(
 				"label length %d exceeds remaining bytes %d",
-				nextNameLength, len(name)-start,
+				nextNameLength, len(b)-start,
 			)
 		}
 
-		labelBytes := name[totalLength+offset : totalLength+offset+nextNameLength]
+		labelBytes := b[totalLength+offset : totalLength+offset+nextNameLength]
 		label := string(labelBytes)
-		names = append(names, label)
+		name = append(name, label)
 
 		totalLength += nextNameLength // Move to the next label length byte
 	}
 
-	return names, totalLength, nil
+	return name, totalLength, nil
 }
 
-func parseDomainName(name []byte, offset int) (names []string, totalLength int, err error) {
-	return readNames(name, offset, make(map[int]bool))
+// Parse a domain name from a byte slice.
+func parseName(nameBytes []byte, offset int) (name Name, totalLength int, err error) {
+	return readName(nameBytes, offset, make(map[int]bool))
 }
 
-func buildDomainName(labels []string) (bytes []byte) {
-	for _, label := range labels {
+// Returns the byte representation of a domain name.
+func (n Name) Bytes() (bytes []byte) {
+	for _, label := range n {
 		length := uint8(len(label))
 		label := []byte(label)
 
