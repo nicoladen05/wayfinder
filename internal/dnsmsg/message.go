@@ -68,7 +68,7 @@ func parseSection[T Resource | Question](parser parser[T], b []byte, sectionCoun
 
 // Parse a DNS message from a byte slice.
 func Parse(b []byte) (Message, error) {
-	header, err := parseHeader(b)
+	header, err := parseHeader(b[0:12])
 	if err != nil {
 		return Message{}, err
 	}
