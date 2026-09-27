@@ -111,6 +111,8 @@ func Parse(b []byte) (Message, error) {
 
 // Pack a DNS message into a byte slice.
 func (m Message) Pack() (bytes []byte, err error) {
+	compressMessages := m.Header.RD == 1
+
 	headerBytes, err := m.Header.Bytes()
 	if err != nil {
 		return nil, err
@@ -118,19 +120,19 @@ func (m Message) Pack() (bytes []byte, err error) {
 	bytes = append(bytes, headerBytes...)
 
 	for _, question := range m.Questions {
-		bytes = append(bytes, question.Bytes()...)
+		bytes = append(bytes, question.Bytes(compressMessages)...)
 	}
 
 	for _, answer := range m.Answers {
-		bytes = append(bytes, answer.Bytes()...)
+		bytes = append(bytes, answer.Bytes(compressMessages)...)
 	}
 
 	for _, authority := range m.Authorities {
-		bytes = append(bytes, authority.Bytes()...)
+		bytes = append(bytes, authority.Bytes(compressMessages)...)
 	}
 
 	for _, additional := range m.Additionals {
-		bytes = append(bytes, additional.Bytes()...)
+		bytes = append(bytes, additional.Bytes(compressMessages)...)
 	}
 
 	return bytes, nil

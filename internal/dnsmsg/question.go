@@ -52,8 +52,8 @@ func parseQuestion(question []byte, offset int) (Question, int, error) {
 	}, qnameLength + 4, nil
 }
 
-func (q Question) Bytes() (bytes []byte) {
-	name := q.QNAME.Bytes()
+func (q Question) Bytes(compress bool) (bytes []byte) {
+	name := q.QNAME.Bytes(compress)
 	nameLength := len(name)
 
 	bytes = append(bytes, name...)

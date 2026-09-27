@@ -90,7 +90,7 @@ func parseName(nameBytes []byte, offset int) (name Name, totalLength int, err er
 }
 
 // Returns the byte representation of a domain name.
-func (n Name) Bytes() (bytes []byte) {
+func (n Name) Bytes(compress bool) (bytes []byte) {
 	for _, label := range n {
 		length := uint8(len(label))
 		label := []byte(label)

@@ -73,8 +73,8 @@ func parseResource(bytes []byte, offset int) (Resource, int, error) {
 }
 
 // Return the byte representation of the resource
-func (r Resource) Bytes() (bytes []byte) {
-	nameBytes := r.NAME.Bytes()
+func (r Resource) Bytes(compress bool) (bytes []byte) {
+	nameBytes := r.NAME.Bytes(compress)
 	nameLength := len(nameBytes)
 
 	bytes = append(bytes, nameBytes...)
