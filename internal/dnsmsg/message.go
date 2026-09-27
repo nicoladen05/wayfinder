@@ -1,6 +1,7 @@
 package dnsmsg
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -68,6 +69,10 @@ func parseSection[T Resource | Question](parser parser[T], b []byte, sectionCoun
 
 // Parse a DNS message from a byte slice.
 func Parse(b []byte) (Message, error) {
+	if len(b) < 12 {
+		return Message{}, errors.New("message needs to be at least 12 bytes long")
+	}
+
 	header, err := parseHeader(b[0:12])
 	if err != nil {
 		return Message{}, err
