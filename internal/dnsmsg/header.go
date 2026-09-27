@@ -110,6 +110,7 @@ func (h Header) Bytes() ([]byte, error) {
 
 	binary.BigEndian.PutUint16(headerBytes[0:2], h.ID)
 	headerBytes[2] = (h.QR << 7) | (h.OPCODE << 3) | (h.AA << 2) | (h.TC << 1) | h.RD
+	headerBytes[3] = (h.RA << 7) | (h.Z << 6) | (h.AD << 5) | (h.CD << 4) | h.RCODE
 	binary.BigEndian.PutUint16(headerBytes[4:6], h.QDCOUNT)
 	binary.BigEndian.PutUint16(headerBytes[6:8], h.ANCOUNT)
 	binary.BigEndian.PutUint16(headerBytes[8:10], h.NSCOUNT)
