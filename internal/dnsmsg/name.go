@@ -20,7 +20,7 @@ func isCompressed(label byte) bool {
 
 func readName(b []byte, offset int, seen map[int]bool) (name Name, totalLength int, err error) {
 	if offset >= len(b) {
-		return nil, 0, fmt.Errorf("offset %d is out of bounds for name length %d", offset, len(name))
+		return nil, 0, fmt.Errorf("offset %d is out of bounds for name length %d", offset, len(b))
 	}
 
 	if seen[offset] {
